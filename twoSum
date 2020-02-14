@@ -1,0 +1,21 @@
+class Solution:
+    def twoSum(self, nums, target):
+        '''
+        :type nums: List[int]
+        :type target: int
+        :rtype List[int]
+        '''
+        # a silly solution !
+        # m=len(nums)
+        # for i in range(m):
+        #     for j in range(i+1,m):
+        #         if nums[i]+nums[j]==target:
+        #             return [i,j]        
+                
+        rest={}
+        for i, value in enumerate(nums):
+            n=target-value
+            if n not in rest:
+                rest[value]=i
+            else:
+                return [rest[n],i]
