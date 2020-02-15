@@ -1,0 +1,13 @@
+n=input ("input:")
+n=int(n)
+
+def F_u(n):
+    if n==0:
+        return 0
+    else:
+        arry=np.array([None]*(n+1))
+        arry[0]=0
+        arry[1]=1
+        for i in range(2,n+1):
+            arry[i]=arry[i-1]+arry[i-2]
+    return arry[n]
