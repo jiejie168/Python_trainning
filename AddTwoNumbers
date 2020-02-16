@@ -65,8 +65,8 @@ def myPrintList(l):
             break
 ##### when test on your own computer,  the create of the linked list. 
 ##### this is important for you to understand more about the data structure of linked list. 
-if __name__ == '__main__':
-    # 342 + 465 = 807
+def main():
+    #     # 342 + 465 = 807
     l1_1 = ListNode(3)
     l1_2 = ListNode(4)
     l1_3 = ListNode(2)
@@ -81,3 +81,6 @@ if __name__ == '__main__':
 
     l3 = Solution().addTwoNumbers(l1_1, l2_1)
     myPrintList(l3)
+
+if __name__ == '__main__':
+    main()
