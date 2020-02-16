@@ -56,12 +56,11 @@ class Solution:
 
 #### this is only for test on your own computuer 
 def myPrintList(l):
-    while(True):
+    while True:
         print(l.val)
         if l.next is not None:
             l = l.next
         else:
-            print()
             break
 ##### when test on your own computer,  the create of the linked list. 
 ##### this is important for you to understand more about the data structure of linked list. 
