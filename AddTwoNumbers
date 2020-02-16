@@ -33,7 +33,6 @@ class Solution:
         p=dummy
 
         while l1 and l2:
-            print (l1 and l2)
             p.next=ListNode((l1.val+l2.val+carry)%10)
             carry=(l1.val+l2.val+carry)//10
             l1=l1.next
