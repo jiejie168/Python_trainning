@@ -1,0 +1,91 @@
+Write a function to find the longest common prefix string amongst an array of strings.
+If there is no common prefix, return an empty string "".
+
+Example 1:
+Input: ["flower","flow","flight"]
+Output: "fl"
+Example 2:
+
+Input: ["dog","racecar","car"]
+Output: ""
+Explanation: There is no common prefix among the input strings.
+Note:
+
+All given inputs are in lowercase letters a-z.
+################################
+solution 1:  using All () funciton in Python. 
+Iterate all the prefix in the first element in strs list, and then compare all the prefix with 
+other elements in strs list by All()function.
+###################################
+
+
+class Solution:
+    def longestCommonPrefix(self, strs: List[str]) -> str:
+        
+        def prefComm(prefix,strs):
+            return all(str.startswith(prefix) for str in strs)
+        if strs==None or len(strs)==0:
+            return ''
+        
+        ans=''
+        length=len(strs[0])
+        for i in range(0,length):
+            pre=strs[0][:i+1]
+            if prefComm(pre,strs):
+                ans=pre
+            else:
+                break
+        return ans
+###############################
+# divide and conque algothrim
+##LCP(x1,x2,...xn)=LCP(LCP(x,..xk),LCP(xk+1,...,xn))
+################################
+
+class Solution:
+    def longestCommonPrefix(self, strs: List[str]) -> str:
+        
+        def commonPrefix(left,right):
+            len_left=len(left)
+            len_right=len(right)
+            len_min=min(len_left,len_right)
+            for i in range(len_min):
+                if left[i]!=right[i]:
+                    return left[:i]
+            return left[:len_min]
+                
+        def find_longestCommonPrefix(strs,left_index,right_index):
+            if left_index==right_index:
+                return strs[left_index]
+            else:
+                mid_index=(left_index+right_index)//2
+                lcpleft=find_longestCommonPrefix(strs,left_index,mid_index)
+                lcpright=find_longestCommonPrefix(strs,mid_index+1,right_index)
+                return commonPrefix(lcpleft,lcpright)
+        
+        if not strs:
+            return ''
+        return find_longestCommonPrefix(strs,0,len(strs)-1)
+#########################################
+##binary search algorithm
+#########################################
+         def isCommon(strs,length):
+            s=len(strs)
+            str1=strs[0][:length]
+            for i in range(1,s):
+                if not strs[i].startswith(str1):
+                    return False
+            return True
+        
+        if not strs: return ""
+        minLen=len(min(strs,key=len))
+        low,high=1,minLen
+        
+        while low<=high:
+            mid=(low+high)//2
+            if isCommon(strs,mid):
+                low=mid+1
+            else:
+                high=mid-1
+        return strs[0][:high]
+        
+        
