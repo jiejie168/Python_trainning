@@ -1,0 +1,21 @@
+## this code is using Monte Carlo method to calculate the value of some complex integral functions. Here, the example we use is 
+##  y=(e**(-x))/(1+(x-1)**2).  the integral range of X is [0,5], and the corresponding range of Y is [0,0.5]. The integrand function is 
+monotonously descrease in this region.  The basic idea of this method is the value of integral equal to the average value within the integral
+region. For instance, Value_integral=(b-a)*Value_average. 
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+def dotDistribution(a,b):
+    return random.uniform(a,b)
+def fun(x):
+    e=2.71828
+    return (e**(-1*x))/(1+(x-1)**2)
+def MCS_2(a,b,count):
+    all_y=0
+    for i in range(count):
+        value_x=dotDistribution(a,b)
+        all_y +=fun(value_x)
+    value_ave=all_y/count   # obtain the average value/ expection/mean value
+    area=(b-a)*value_ave
+    return area
