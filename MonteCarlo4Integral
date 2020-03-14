@@ -1,0 +1,65 @@
+## this code is using Monte Carlo method to calculate the value of some complex integral functions. Here, the example we use is 
+##  y=(e**(-x))/(1+(x-1)**2).  the integral range of X is [0,5], and the corresponding range of Y is [0,0.5]. The integrand function is 
+monotonously descrease in this region.  The basic idea of this method is first to generate random points within the overall region [0,5,0,0.5].
+Then, count the number of point within the area of integrand function. Finally, the needed area is computed based on the propation.  Uniform
+distribution of both X, Y are assumed. 
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+def dotDist(a_x,b_x,a_y,b_y):
+    '''
+    the ranges of distribution point with respect to X, and Y are probably different. 
+    a_x,b_x,a_y,b_y should follow the specific figure of function.
+    '''
+    dot_x=random.uniform(a_x,b_x)
+    dot_y=random.uniform(a_y,b_y)
+    return (dot_x,dot_y)
+
+def fun(x_value,y_value):
+    '''
+    to judge if the distribution of random point. 
+    if its real y value is larger than the given y_value, return True, otherwise, return False
+    '''
+    # y=x_value**3
+    e=2.71828
+    y=(e**(-1*x_value))/(1+(x_value-1)**2)
+    sign=True if y_value<=y else False
+    return sign
+
+def comp_area_MCS(a_x,b_x,a_y,b_y,num):
+    '''
+    :param a: the low-boundary of function
+    :param b: the upper-boundary of function
+    :param num:  the MC simulation number.
+    :return:  the area of function between a and b
+    '''
+    k=0
+    for i in range (num):
+        dot_x,dot_y=dotDist(a_x,b_x,a_y,b_y)
+        sign=fun(dot_x, dot_y)
+        plt.scatter(dot_x,dot_y)
+        if sign:
+            k+=1
+    area=(b_x-a_x)*(b_y-a_y)*k/num   # noted: the overall area should be given. 
+    print ("the area of function between {} and {} is {}".format(a_x,b_x,area))
+
+def f_of_x(x):
+    """
+    This is the main function we want to integrate over.
+    Args:
+    - x (float) : input to function; must be in radians
+    Return:
+    - output of function f(x) (float)
+    """
+    e=2.71828
+    return (e**(-1*x))/(1+(x-1)**2)
+
+### data visualization!! 
+x_data=np.linspace(0,5,1000)
+y_data=f_of_x(x_data)
+plt.plot(x_data,y_data)
+comp_area_MCS(0,5,0,0.5,1000)
+ax=plt.gca()
+ax.set_xlim(0,5)
+plt.show()
