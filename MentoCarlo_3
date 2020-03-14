@@ -1,0 +1,51 @@
+'''
+Find solutions of x1 and x2 for the following problem by using a sampling
+method.
+Minimize f=x1^2+2x2^2-4x1x2+8
+subject to -x1^2+x2+ 900 <=0
+x1x2-100<=0
+x1:[0,999]; x2:[0,999]
+Hint: x1 and x2 are uniformly distributed in the interval [0, 999]
+
+solution agrithm
+This problem is called a constrained nonlinear optimization problem. Although
+efficient numerical methods exist, i.e., Sequential Quadratic Programming
+(SQP), to solve these kinds of problems, we are obtaining the solution by using a
+sampling method. The basic strategy is very simple: Check all possible
+combinations of x1 and x2 with corresponding f values. Then, we seek a
+minimum value of f and a corresponding sampling set of x1 and x2. If the
+sampling set satisfies the given constraints, the data set is our solution.
+Accordingly, the procedure requires large simulation numbers to obtain accurate
+results through numerical simulation tools.
+'''
+
+import numpy as np
+import random
+
+def fun(a,b):
+    return a**2+2*b**2-4*a*b+8
+def distribution():
+    a=random.uniform(0,999)
+    b=random.uniform(0,999)
+    return (a,b)
+def mc_min(count):
+    f_value=[]
+    a_all=[]
+    b_all=[]
+    for i in range(count):
+        a,b=distribution()
+        f=fun(a,b)
+        
+        if (-a**2+b+900<=0) and (a*b-1000<0):
+            f_value.append(f)
+            a_all.append(a)
+            b_all.append(b)
+    min_value=np.min(f_value)
+    min_index=np.argmin(f_value)
+    a_f=a_all[min_index]
+    b_f=b_all[min_index]
+    
+    return (min_value,a_f,b_f)
+            
+min_value,a_f,b_f=mc_min(10000000)
+print (min_value,a_f,b_f)
