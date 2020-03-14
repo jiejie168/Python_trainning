@@ -1,0 +1,50 @@
+
+Estimate the safety index beta of Example 3.1 by using the MCS method with the
+same limit-state function, mean values, standard deviations, and distributions of
+the random variables.
+
+########################################################################################
+# using Mento Carlo method  to compute the failure probability of limit state
+########################################################################################
+
+def paraDist():
+    P=random.gauss(10,2)
+    L=random.gauss(8,0.1)
+    W=random.gauss(100e-6,2e-5)
+    T=random.gauss(600e3,1e5)
+    return (P,L,W,T)
+
+def limitState(P,L,W,T):
+    g=W*T-P*L/4
+    return g
+
+def MC_pf(count):
+    num_all=count
+    sum_I=0
+    for i in range(count):
+        P,L,W,T=paraDist()
+        g=limitState(P,L,W,T)
+        I=1 if g<0 else 0
+        sum_I+=I
+    pf=sum_I/num_all
+    return pf
+
+def MC_beta(count):
+    num_all=count
+    sum_ave=0
+    sum_ave2=0
+    for i in range(count):
+        P,L,W,T=paraDist()
+        g=limitState(P,L,W,T)
+        sum_ave+=g
+        sum_ave2+=g**2
+    ave=sum_ave/num_all
+    std=np.sqrt(sum_ave2/num_all-(sum_ave/num_all)**2)
+    beta=ave/std
+    return beta
+beta=MC_beta(20000)
+pf=MC_pf(20000)
+print (beta)
+print (pf)
+
+## The calculated beta value is a little bit different with the value from the reference book. correct it if possible. 
