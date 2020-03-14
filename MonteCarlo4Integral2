@@ -19,3 +19,26 @@ def MCS_2(a,b,count):
     value_ave=all_y/count   # obtain the average value/ expection/mean value
     area=(b-a)*value_ave
     return area
+
+## find the variance by MC method.
+def get_crude_MC_variance(a,b,num_samples):
+    """
+    This function returns the variance fo the Crude Monte Carlo.
+    Note that the inputed number of samples does not neccissarily
+    need to correspond to number of samples used in the Monte
+    Carlo Simulation.
+    Args:
+    - num_samples (int)
+    Return:
+    - Variance for Crude Monte Carlo approximation of f(x) (float)
+    """
+    # get the average of squares
+    ave_all = 0
+    squre_all=0
+    for i in range(num_samples):
+        x = dotDistribution(a,b)
+        squre_all += fun(x)**2
+        ave_all += fun(x)
+    sum_of_sqs = squre_all*(b-a) / num_samples
+    sum_of_ave=(ave_all*(b-a)/num_samples)**2
+    return sum_of_sqs - sum_of_ave
