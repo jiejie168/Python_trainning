@@ -1,0 +1,74 @@
+
+Solve the safety-index BETA of Example 4.1 by using the HL method with the same
+performance function, mean values, standard deviations, and distributions of the
+random variables.
+
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+
+def fun(a,b):
+    return a**3+b**3-18
+def fun_deriv_a(a):
+    return 3*a**2
+def fun_deriv_b(b):
+    return 3*b**2
+def gradient2_a(a,sx1):
+    grad2=(fun_deriv_a(a)*sx1)**2
+    return grad2
+def gradient2_b(b,sx2):
+    grad2=(fun_deriv_b(b)*sx2)**2
+    return grad2
+
+
+# mu1,mu2=10,10
+# sx1,sx2=5,5
+
+def FORM_HL(mu1,mu2,sx1,sx2):
+    
+    ### the first iteration, by using the mean value point as the inital design point.
+    ## obtain the new design point X2. The first beta calculation is due to original definition
+    mu_g=fun(mu1,mu2)
+    sx_g=np.sqrt(gradient2_a(mu1,sx1)+gradient2_b(mu2,sx2))
+    beta_init=mu_g/sx_g
+    cos_alpha1=-fun_deriv_a(mu1)*sx1/sx_g
+    cos_alpha2=-fun_deriv_b(mu2)*sx2/sx_g
+
+    a_init=mu1+beta_init*sx1*cos_alpha1
+    b_init=mu2+beta_init*sx2*cos_alpha2
+    ua_init=(a_init-mu1)/sx1
+    ub_init=(b_init-mu2)/sx2
+
+    ## loop from the new design point X2. 
+    ibxilong=0.001
+    i=1
+    flag=True
+
+    while flag:
+        # interation starts from the second step
+        g_new=fun(a_init,b_init)
+        sx_g=np.sqrt(gradient2_a(a_init,sx1)+gradient2_b(b_init,sx2))
+        beta_new=(g_new-fun_deriv_a(a_init)*sx1*ua_init-fun_deriv_b(b_init)*sx2*ub_init)/sx_g
+        cos_alpha1=-fun_deriv_a(a_init)*sx1/sx_g
+        cos_alpha2=-fun_deriv_b(b_init)*sx2/sx_g
+
+        a_new=mu1+beta_new*sx1*cos_alpha1  # mean value 1 should not be changed
+        b_new=mu2+beta_new*sx2*cos_alpha2  # mean value 2 should not be changed
+        ua_new=(a_new-mu1)/sx1  # update the X value in U-space
+        ub_new=(b_new-mu2)/sx2
+
+        residual=np.abs((beta_new-beta_init)/beta_init)
+        if residual<=ibxilong:
+            flag=False
+
+        beta_init=beta_new
+        a_init=a_new
+        b_init=b_new
+        ua_init=ua_new
+        ub_init=ua_new
+        i+=1
+        print ("loop:{}".format(i))
+        print ("the safety factor beta: {} with a residual error {}".format(beta_new,residual))
+    print ("solution is converged")
+
+FORM_HL(10,10,5,5)
