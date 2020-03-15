@@ -2,6 +2,8 @@
 Solve the safety-index BETA of Example 4.1 by using the HL method with the same
 performance function, mean values, standard deviations, and distributions of the
 random variables.
+#  The HL method may not converge
+## in some cases due to its linear approximation. e.g. FORM_HL(10,9.9,5,5)
 
 import numpy as np
 import matplotlib.pyplot as plt
