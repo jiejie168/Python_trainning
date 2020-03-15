@@ -1,0 +1,20 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+
+### USE the raw FORM for the calculation of beta. 
+### this computed result is not correct due to high nonlinear limit-state function
+
+
+def fun(a,b):
+    return a**3+b**3-18
+def fun_deriv_a(a):
+    return 3*a**2
+def fun_deriv_b(b):
+    return 3*b**2
+def FSorderPara(mu1,mu2,sx1,sx2):
+    mu_g=fun(mu1,mu2)
+    sx_g=np.sqrt((fun_deriv_a(mu1)*sx1)**2+(fun_deriv_b(mu2)*sx2)**2)
+    beta=mu_g/sx_g
+    return mu_g,sx_g,beta
+FSorderPara(10,10,5,5)   
