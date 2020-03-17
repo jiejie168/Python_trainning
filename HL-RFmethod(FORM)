@@ -1,0 +1,170 @@
+#Let x be a random variable having a lognormal distribution. Its mean value and
+#standard deviation are 120 and 12 . Calculate the mean value and
+#standard deviation of the equivalent normal distribution variable x' at x* =
+#80.0402.
+
+from scipy.stats import lognorm
+from scipy.stats import norm
+import matplotlib.pyplot as plt
+import numpy as np
+
+xiegama_x=12  
+mu_x=120
+x1=80.0402
+
+x=np.linspace (0,200,2000)
+xiegama_y=np.sqrt(np.log(1+(xiegama_x/mu_x)**2))  # x is lognormal distribution 
+mu_y=np.log(mu_x)-0.5*xiegama_y**2              # y is normal distribution
+dist=lognorm(s=xiegama_y,loc=0,scale=np.exp(mu_y))
+# y=1/(np.sqrt(2*np.pi)*x*xiegama_y)*np.exp(-0.5*((np.log(x)-mu_y)/xiegama_y)**2)
+
+y1=dist.pdf(x1)                      # the value of y1 in the original distribution
+fai_u1= (np.log(x1)-mu_y)/xiegama_y  # equivalent U1 in the standard normal distribution.
+pdf_u1=norm().pdf(fai_u1)            # the probability density of U1 in standard normal distribution
+
+xiegama_eq=pdf_u1/y1
+mu_eq= x1-fai_u1*pdf_u1/y1
+
+print (xiegama_y,mu_y,y1,fai_u1,pdf_u1)
+print (xiegama_eq,mu_eq)
+plt.plot(x,dist.pdf(x))
+# plt.plot(x,dist.cdf(x))
+# plt.plot(x,y)
+
+
+#########################################
+#problem 2: evaluate the safety factor betat and  the design point X* of MPP
+# complete appliction of HL-RF method in structural riks analysis
+#########################################
+'''
+Consider the plane frame structure shown above. Evaluate the safety-index beta and the coordinates
+xi of the MPP. The limit state on the displacement is : 5PL^3/(48EI)<=l/30.
+
+where E is Young’s modulus and I is the area moment of the cross-section. There are three random variables
+in this example. E and I are normally distributed, and the CDF and the P are defined by type-I extreme value distribution.
+
+The mean values, mu_P, mu_L, mu_E, mu_I, of the load P, the beam length L, the
+Young’s modulus E, and the area moment I are 4 kN, 5 m, 2.0*10^7 kN/m2, and
+10^-4 m4, respectively. The corresponding standard deviations, xiegama_P , xiegama_L, xiegama_E,
+xiegama_I, are 1 kN, 0 m, 0.5*10^7 kN/m2, and 0.2*10^-4 m4. Here, L is a
+deterministic parameter (L = 5 m) because xiegama_L=0.
+'''
+
+def fun(E,I,P):
+    return E*I-78.122*P
+def fun_deriv_E(I):
+    ## derivative with respect to E
+    return I
+def fun_deriv_I(E):
+    # derivative with respect to I
+    return E
+def fun_deriv_P():
+    return -78.122
+def gradient2_E(I,sx_E):
+    grad2=(fun_deriv_E(I)*sx_E)**2
+    return grad2
+def gradient2_I(E,sx_I):
+    grad2=(fun_deriv_I(E)*sx_I)**2
+    return grad2
+def gradient2_P(sx_P):
+    grad2=(fun_deriv_P()*sx_P)**2
+    return grad2
+
+
+# mu1,mu2=10,10
+# sx1,sx2=5,5
+delta=3.5499
+alpha=1.2825
+
+def FORM_HLRF(mu_E,mu_I,mu_P,sx_E,sx_I,sx_P):
+
+    ### the first iteration, by using the mean value point as the inital design point.
+    ## obtain the new design point X2. The first beta calculation is due to original definition
+
+    #### compute the equivelant mu and xiegama in the standard normal distribution.
+    pdf_P=alpha*np.exp(-(mu_P-delta)*alpha-np.exp(-(mu_P-delta)*alpha))
+    cdf_P=np.exp(-np.exp(-alpha*(mu_P-delta)))
+
+#     print ("pdf_P,cdf_P:{},{}".format(pdf_P,cdf_P))
+    cdf_inv=norm().ppf(cdf_P)  #  compute the inverse of cdf_p of cdf in the standard normal distribution
+    pdf_inv=norm().pdf(cdf_inv) # compute the pdf of cdf_inv in the standard normal distribution.
+#     print ("cdf_inv,pdf_inv:{},{}".format(cdf_inv,pdf_inv))
+    mu_P_new=mu_P-cdf_inv*pdf_inv/pdf_P
+    sx_P_new=pdf_inv/pdf_P
+#     print ("mu_P_new,sx_P_new:{},{}".format(mu_P_new,sx_P_new))
+#     print (mu_P_new,sx_P_new)
+    # compute the first iteration
+    mu_g=fun(mu_E,mu_I,mu_P)  # the mu_P should not be updated in the first iteration
+#     print (gradient2_E(mu_I,sx_E))
+#     print (gradient2_I(mu_E,sx_I))
+#     print (gradient2_P(sx_P))
+    sx_g=np.sqrt(gradient2_E(mu_I,sx_E)+gradient2_I(mu_E,sx_I)+gradient2_P(sx_P_new))
+    beta_init=mu_g/sx_g
+    cos_alpha1=-fun_deriv_E(mu_I)*sx_E/sx_g
+    cos_alpha2=-fun_deriv_I(mu_E)*sx_I/sx_g
+    cos_alpha3=-fun_deriv_P()*sx_P_new/sx_g
+
+    E_init=mu_E+beta_init*sx_E*cos_alpha1
+    I_init=mu_I+beta_init*sx_I*cos_alpha2
+    P_init=mu_P_new+beta_init*sx_P_new*cos_alpha3
+    uE_init=(E_init-mu_E)/sx_E
+    uI_init=(I_init-mu_I)/sx_I
+    uP_init=(P_init-mu_P_new)/sx_P_new
+
+#     print ("g_init:{}".format(mu_g))
+#     print ("sx_g:{}".format(sx_g))
+#     print ("beta_init,cos_alpha1,cos_alpha2,cos_alpha3:{},{},,{},{}".format(beta_init,cos_alpha1,cos_alpha2,cos_alpha3))
+#     print ("E_init,I_init,P_init:{},{},{}".format(E_init,I_init,P_init))
+#     print ("uE_init,uI_init,uP_init:{},{},{}".format(uE_init,uI_init,uP_init))
+
+    ## loop from the new design point X2.
+    ibxilong=0.001
+    i=1
+    flag=True
+
+    while flag:
+        ### correct the non-normal distribution.
+        pdf_P=alpha*np.exp(-(P_init-delta)*alpha-np.exp(-(P_init-delta)*alpha))
+        cdf_P=np.exp(-np.exp(-alpha*(P_init-delta)))
+        cdf_inv=norm().ppf(cdf_P)  #  compute the inverse of cdf_p of cdf in the standard normal distribution
+        pdf_inv=norm().pdf(cdf_inv) # compute the pdf of cdf_inv in the standard normal distribution.
+        mu_P_new=P_init-cdf_inv*pdf_inv/pdf_P
+        sx_P_new=pdf_inv/pdf_P
+
+        # interation starts from the second step
+        g_new=fun(E_init,I_init,P_init)
+        sx_g=np.sqrt(gradient2_E(I_init,sx_E)+gradient2_I(E_init,sx_I)+gradient2_P(sx_P_new))
+        beta_new=(g_new-fun_deriv_E(I_init)*sx_E*uE_init-fun_deriv_I(E_init)*sx_I*uI_init-
+                  fun_deriv_P()*sx_P_new*uP_init)/sx_g  # noted: the xiegam_P is updated.
+        cos_alpha1=-fun_deriv_E(I_init)*sx_E/sx_g
+        cos_alpha2=-fun_deriv_I(E_init)*sx_I/sx_g
+        cos_alpha3=-fun_deriv_P()*sx_P_new/sx_g
+
+        E_new=mu_E+beta_new*sx_E*cos_alpha1  # mean value 1 should not be changed
+        I_new=mu_I+beta_new*sx_I*cos_alpha2  # mean value 2 should not be changed
+        P_new=mu_P_new+beta_new*sx_P_new*cos_alpha3
+        uE_new=(E_new-mu_E)/sx_E  # update the X value in U-space
+        uI_new=(I_new-mu_I)/sx_I
+        uP_new=(P_new-mu_P_new)/sx_P_new
+
+        residual=np.abs((beta_new-beta_init)/beta_init)
+        if residual<=ibxilong:
+            flag=False
+
+        beta_init=beta_new
+        E_init=E_new
+        I_init=I_new
+        P_init=P_new
+        uE_init=uE_new
+        uI_init=uI_new
+        uP_init=uP_new
+        g_test=g_new
+
+        i+=1
+        print ("loop:{}".format(i))
+        print ("g_new: {}".format(g_new))
+        print ("the safety factor beta: {} with a residual error {}".format(beta_new,residual))
+
+FORM_HLRF(2e7,1e-4,4,0.5e7,0.2e-4,1)
+
+
