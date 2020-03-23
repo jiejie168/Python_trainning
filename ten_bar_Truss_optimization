@@ -1,0 +1,176 @@
+# a typical ten_bar_truss example for HL-FORM optimization.  
+# the description of case is written on notebooks. 
+
+__author__ = 'Jie'
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from scipy.stats import norm
+import random
+from sympy import *
+
+class TenbarTruss():
+    '''
+    Three different reliability methods are used for an optimization problem with respect to ten bar truss structure.
+    the failure probability is solved.
+    '''
+    def __init__(self,mu_A1=13,mu_A2=2,mu_A3=9,COV_A1=0.1,COV_A2=0.1,COV_A3=0.1,P=100000,L=360,E=1e7,rou=0.1,xiegama_c=20000,disp_c=4.0,count=100000,LS="disp"):
+        self.mu_A1=mu_A1
+        self.mu_A2=mu_A2
+        self.mu_A3=mu_A3
+        self.COV_A1=COV_A1
+        self.COV_A2=COV_A2
+        self.COV_A3=COV_A3
+        self.P=P
+        self.L=L
+        self.E=E
+        self.rou=rou
+        self.xiegama_c=xiegama_c
+        self.disp_c=disp_c
+        self.count=count
+        self.LS=LS   ## "disp", "stress1", "stress2".
+
+    def paraDist(self):
+        A1=norm(loc=self.mu_A1,scale=self.COV_A1*self.mu_A1).rvs(1)
+        A2=norm(loc=self.mu_A2,scale=self.COV_A2*self.mu_A2).rvs(1)
+        A3=norm(loc=self.mu_A3,scale=self.COV_A3*self.mu_A3).rvs(1)
+        return (A1[0],A2[0],A3[0])
+
+    def limitState_disp(self):
+        A1,A2,A3=self.paraDist()
+        DT=4*A2**2*(8*A1**2+A3**2)+4*np.sqrt(2)*A1*A2*A3*(3*A1+4*A2)+A1*A3**2*(A1+6*A2)
+        temp=(4*np.sqrt(2)*A1**3*(24*A2**2+A3**2)+A3**3*(7*A1**2+26*A2**2))/DT+\
+             4*A1*A2*A3*(((20*A1**2+76*A1*A2+10*A3**2)+np.sqrt(2)*A3*(25*A1+29*A2))/DT)
+        disp_lim=self.disp_c-self.P*self.L*temp/(A1*A3*self.E)
+        return disp_lim
+
+    def limitState_1stDeriv(self):
+        ## return the expression of first-order derivative, and the original expression
+        A1,A2,A3=Symbol('A1'),Symbol('A2'),Symbol('A3')
+        disp_c,P,L,E=Symbol('disp_c'),Symbol('P'),Symbol('L'),Symbol('E')
+        DT=4*A2**2*(8*A1**2+A3**2)+4*np.sqrt(2)*A1*A2*A3*(3*A1+4*A2)+A1*A3**2*(A1+6*A2)
+        temp=(4*np.sqrt(2)*A1**3*(24*A2**2+A3**2)+A3**3*(7*A1**2+26*A2**2))/DT+\
+             4*A1*A2*A3*(((20*A1**2+76*A1*A2+10*A3**2)+np.sqrt(2)*A3*(25*A1+29*A2))/DT)
+        disp_lim=self.disp_c-self.P*self.L*temp/(A1*A3*self.E)
+        A1_prime=disp_lim.diff(A1)
+        A2_prime=disp_lim.diff(A2)
+        A3_prime=disp_lim.diff(A3)
+        return (disp_lim,A1_prime,A2_prime,A3_prime)
+
+    def limitState_1stDeriv_value(self,A1,A2,A3):
+        # the values of the first order of limit state expression and the original expression
+        disp_c,A1_prime,A2_prime,A3_prime=self.limitState_1stDeriv()
+        disp_cvalue=disp_c.evalf(subs={"A1":A1,'A2':A2,'A3':A3})
+        A1_1stvalue=A1_prime.evalf(subs={"A1":A1,'A2':A2,'A3':A3})
+        A2_1stvalue=A2_prime.evalf(subs={"A1":A1,'A2':A2,'A3':A3})
+        A3_1stvalue=A3_prime.evalf(subs={"A1":A1,'A2':A2,'A3':A3})
+        return (disp_cvalue,A1_1stvalue,A2_1stvalue,A3_1stvalue)
+
+    def limitState_xiegama1(self):
+        A1,A2,A3=self.paraDist()
+        DT=4*A2**2*(8*A1**2+A3**2)+4*np.sqrt(2)*A1*A2*A3*(3*A1+4*A2)+A1*A3**2*(A1+6*A2)
+        temp=2+A1*A2*A3*(2*np.sqrt(2)*A1+A3)/DT
+        stress_lim=self.xiegama_c-temp*self.P/A1
+        return stress_lim
+
+    def limitState_xiegama2(self):
+        A1,A2,A3=self.paraDist()
+        DT=4*A2**2*(8*A1**2+A3**2)+4*np.sqrt(2)*A1*A2*A3*(3*A1+4*A2)+A1*A3**2*(A1+6*A2)
+        temp=2+np.sqrt(2)*A1*A2*A3*(2*np.sqrt(2)*A1+A3)/DT
+        stress_lim=self.xiegama_c-temp*self.P/A3
+        return stress_lim
+
+    def MC_pf(self):
+        num_all=self.count
+        sum_I=0
+        sum_ave=0
+        sum_ave2=0
+        for i in range(self.count):
+            A1,A2,A3=self.paraDist()
+
+            if self.LS=="disp":
+                g=self.limitState_disp()
+            elif self.LS=="stress1":
+                g=self.limitState_xiegama1()
+            elif self.LS=="stress2":
+                g=self.limitState_xiegama2()
+            else:
+                break
+
+            I=1 if g<0 else 0
+            sum_I+=I
+            sum_ave+=g
+            sum_ave2+=g**2
+        ave=sum_ave/num_all
+        std=np.sqrt(sum_ave2/num_all-(sum_ave/num_all)**2)
+        pf=sum_I/num_all
+        beta=ave/std
+        return pf,beta
+
+    def HL_FORM(self):
+        ### the first iteration, by using the mean value point as the inital design point.
+        ## obtain the new design point X2. The first beta calculation is due to original definition
+        mu_g,A1_1stvalue,A2_1stvalue,A3_1stvalue=self.limitState_1stDeriv_value(self.mu_A1,self.mu_A2,self.mu_A3)
+        mu_g,A1_1stvalue,A2_1stvalue,A3_1stvalue=float(mu_g),float(A1_1stvalue),float(A2_1stvalue),float(A3_1stvalue)
+        var_g2=(A1_1stvalue*self.COV_A1*self.mu_A1)**2+(A2_1stvalue*self.COV_A2*self.mu_A2)**2+(A3_1stvalue*self.COV_A3*self.mu_A3)**2
+        sx_g=np.sqrt(var_g2)
+        beta_init=mu_g/sx_g
+        cos_alpha1=-A1_1stvalue*self.COV_A1*self.mu_A1/sx_g
+        cos_alpha2=-A2_1stvalue*self.COV_A2*self.mu_A2/sx_g
+        cos_alpha3=-A3_1stvalue*self.COV_A3*self.mu_A3/sx_g
+        # compute the new design point X1,U1
+        a_init=self.mu_A1+beta_init*self.COV_A1*self.mu_A1*cos_alpha1
+        b_init=self.mu_A2+beta_init*self.COV_A2*self.mu_A2*cos_alpha2
+        c_init=self.mu_A3+beta_init*self.COV_A3*self.mu_A3*cos_alpha3
+
+        ua_init=(a_init-self.mu_A1)/self.COV_A1/self.mu_A1  # used for the following beta compute
+        ub_init=(b_init-self.mu_A2)/self.COV_A2/self.mu_A2
+        uc_init=(c_init-self.mu_A3)/self.COV_A3/self.mu_A3
+
+        ## loop from the new design point X2.
+        ibxilong=0.001
+        i=1
+        flag=True
+        while flag:
+            # interation starts from the second step
+            g_new,A1_1stvalue,A2_1stvalue,A3_1stvalue=self.limitState_1stDeriv_value(a_init,b_init,c_init)
+            g_new,A1_1stvalue,A2_1stvalue,A3_1stvalue=float(g_new),float(A1_1stvalue),float(A2_1stvalue),float(A3_1stvalue)
+            sx_g=np.sqrt((A1_1stvalue*self.COV_A1*self.mu_A1)**2+(A2_1stvalue*self.COV_A2*self.mu_A2)**2+
+                     (A3_1stvalue*self.COV_A3*self.mu_A3)**2)
+
+            beta_new=(g_new-A1_1stvalue*self.COV_A1*self.mu_A1*ua_init-A2_1stvalue*self.COV_A2*self.mu_A2*ub_init-
+                      A3_1stvalue*self.COV_A3*self.mu_A3*uc_init)/sx_g
+            cos_alpha1=-A1_1stvalue*self.COV_A1*self.mu_A1/sx_g
+            cos_alpha2=-A2_1stvalue*self.COV_A2*self.mu_A2/sx_g
+            cos_alpha3=-A3_1stvalue*self.COV_A3*self.mu_A3/sx_g
+            a_new=self.mu_A1+beta_new*self.COV_A1*self.mu_A1*cos_alpha1
+            b_new=self.mu_A2+beta_new*self.COV_A2*self.mu_A2*cos_alpha2
+            c_new=self.mu_A3+beta_new*self.COV_A3*self.mu_A3*cos_alpha3
+            ua_new=(a_new-self.mu_A1)/self.COV_A1/self.mu_A1  # update the X value in U-space
+            ub_new=(b_new-self.mu_A2)/self.COV_A2/self.mu_A2
+            uc_new=(c_new-self.mu_A3)/self.COV_A3/self.mu_A3
+
+            residual=np.abs((beta_new-beta_init)/beta_init)
+            if residual<=ibxilong:
+                flag=False
+
+            beta_init=beta_new
+            a_init=a_new
+            b_init=b_new
+            ua_init=ua_new
+            ub_init=ua_new
+            i+=1
+            print ("loop:{}".format(i))
+            print ("the safety factor beta: {} with a residual error {}".format(beta_new,residual))
+        print ("solution is converged")
+        gauss=norm(loc=0,scale=1)
+        Pf=gauss.cdf(-beta_new)
+        return (Pf,beta_new,residual)
+
+tenBarTruss=TenbarTruss(count=100000,LS="disp")
+Pf,beta,residual=tenBarTruss.HL_FORM()
+print (Pf,beta,residual)
+
+# pf,beta=tenBarTruss.MC_pf()
+# print (pf,beta)
